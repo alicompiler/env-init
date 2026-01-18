@@ -6,3 +6,6 @@ RUN pip install --no-cache-dir requests
 RUN pip install --no-cache-dir 'psycopg[binary]'
 
 WORKDIR /work
+
+COPY . .
+CMD ["python", "main.py"]

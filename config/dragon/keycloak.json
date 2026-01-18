@@ -1,5 +1,5 @@
 {
-    "base_url": "http://hamam.sso.local",
+    "base_url": "http://sso.hamam.local",
     "admin_user": "admin",
     "admin_pass": "admin",
     "realm_name": "hamam",
