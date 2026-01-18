@@ -1,0 +1,38 @@
+{
+    "base_url": "http://keycloak-base-url:port",
+    "admin_user": "admin",
+    "admin_pass": "admin",
+    "realm_name": "your_realm_name",
+    "client_id": "your_client_id",
+    "redirect_uris": [
+        "http://your-redirect-uri.com/*"
+    ],
+    "web_origins": [
+        "http://your-web-origin.com"
+    ],
+    "roles": [
+        "role1",
+        "role2"
+    ],
+    "enable_service_account": true,
+    "access_token_lifespan": 600,
+    "refresh_token_lifespan": 3600,
+    "frontend_url": null,
+    "users": [
+        {
+            "username": "user1",
+            "password": "pass123",
+            "roles": [
+                "role1"
+            ]
+        },
+        {
+            "username": "user2",
+            "password": "pass123",
+            "roles": [
+                "role1",
+                "role2"
+            ]
+        }
+    ]
+}

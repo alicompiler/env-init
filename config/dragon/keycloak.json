@@ -1,0 +1,55 @@
+{
+    "base_url": "http://hamam.sso.local",
+    "admin_user": "admin",
+    "admin_pass": "admin",
+    "realm_name": "hamam",
+    "client_id": "api",
+    "redirect_uris": [],
+    "web_origins": [],
+    "roles": [
+        "admin",
+        "customer",
+        "super-admin"
+    ],
+    "enable_service_account": true,
+    "access_token_lifespan": 300,
+    "refresh_token_lifespan": 900,
+    "frontend_url": null,
+    "users": [
+        {
+            "username": "admin",
+            "password": "pass",
+            "roles": [
+                "admin"
+            ]
+        },
+        {
+            "username": "super",
+            "password": "pass",
+            "roles": [
+                "super-admin"
+            ]
+        },
+        {
+            "username": "customer1",
+            "password": "pass",
+            "roles": [
+                "customer"
+            ]
+        },
+        {
+            "username": "customer2",
+            "password": "pass",
+            "roles": [
+                "customer"
+            ]
+        },
+        {
+            "username": "customer3",
+            "password": "pass",
+            "roles": [
+                "customer"
+            ]
+        }
+    ]
+}
