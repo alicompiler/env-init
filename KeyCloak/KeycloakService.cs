@@ -1,32 +1,31 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
-using EnvInit.Models;
-using EnvInit.KeyCloak.DTOs;
-using EnvInit.KeyCloak.Models;
 
 namespace EnvInit.KeyCloak;
 
-public class KeycloakService
+public class KeyCloakService
 {
     private readonly HttpClient _httpClient;
     private string? _token;
+    private readonly KeyCloakConfig _config;
 
-    public KeycloakService(HttpClient httpClient)
+    public KeyCloakService(KeyCloakConfig config)
     {
-        _httpClient = httpClient;
+        _httpClient = new HttpClient();
+        _config = config;
+        _token = GetAdminTokenAsync().Result;
     }
 
-    public async Task<string> GetAdminTokenAsync(string baseUrl, string username, string password)
+    private async Task<string> GetAdminTokenAsync()
     {
-        var url = $"{baseUrl}/realms/master/protocol/openid-connect/token";
-        var content = new FormUrlEncodedContent(new[]
-        {
+        var url = $"{_config.BaseUrl}/realms/master/protocol/openid-connect/token";
+        var content = new FormUrlEncodedContent(
+        [
             new KeyValuePair<string, string>("grant_type", "password"),
             new KeyValuePair<string, string>("client_id", "admin-cli"),
-            new KeyValuePair<string, string>("username", username),
-            new KeyValuePair<string, string>("password", password)
-        });
+            new KeyValuePair<string, string>("username", _config.AdminUser),
+            new KeyValuePair<string, string>("password", _config.AdminPass)
+        ]);
 
         var response = await _httpClient.PostAsync(url, content);
         response.EnsureSuccessStatusCode();
@@ -41,30 +40,30 @@ public class KeycloakService
         _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _token);
     }
 
-    public async Task CreateRealmAsync(string baseUrl, string realmName)
+    public async Task CreateRealmAsync()
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms";
-        var data = new RealmRepresentation { Realm = realmName, Enabled = true };
+        var url = $"{_config.BaseUrl}/admin/realms";
+        var data = new RealmRepresentation { Realm = _config.RealmName, Enabled = true };
         var response = await _httpClient.PostAsJsonAsync(url, data);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<bool> IsRealmExistsAsync(string baseUrl, string realmName)
+    public async Task<bool> IsRealmExistsAsync()
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}";
         var response = await _httpClient.GetAsync(url);
         return response.IsSuccessStatusCode;
     }
 
-    public async Task CreateClientAsync(string baseUrl, string realmName, string clientId, ClientOptions options)
+    public async Task CreateClientAsync(ClientOptions options)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/clients";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients";
         var data = new ClientRepresentation
         {
-            ClientId = clientId,
+            ClientId = _config.ClientId,
             Enabled = true,
             RedirectUris = options.RedirectUris,
             WebOrigins = options.WebOrigins,
@@ -77,31 +76,30 @@ public class KeycloakService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<bool> IsClientExistsAsync(string baseUrl, string realmName, string clientId)
+    public async Task<bool> IsClientExistsAsync()
     {
         AddAuthHeader();
-        // Keycloak uses internal ID for certain operations, but we search by clientId here
-        var url = $"{baseUrl}/admin/realms/{realmName}/clients?clientId={clientId}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients?clientId={_config.ClientId}";
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
         var clients = await response.Content.ReadFromJsonAsync<List<ClientRepresentation>>();
         return clients != null && clients.Any();
     }
 
-    public async Task<ClientRepresentation> GetClientByClientIdAsync(string baseUrl, string realmName, string clientId)
+    public async Task<ClientRepresentation> GetClientByClientIdAsync()
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/clients?clientId={clientId}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients?clientId={_config.ClientId}";
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
         var clients = await response.Content.ReadFromJsonAsync<List<ClientRepresentation>>();
-        return clients?.FirstOrDefault() ?? throw new Exception($"Client '{clientId}' not found");
+        return clients?.FirstOrDefault() ?? throw new Exception($"Client '{_config.ClientId}' not found");
     }
 
-    public async Task<string> CreateUserAsync(string baseUrl, string realmName, UserConfig user)
+    public async Task<string> CreateUserAsync(UserConfig user)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/users";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users";
         var data = new UserRepresentation
         {
             Username = user.Username,
@@ -121,66 +119,66 @@ public class KeycloakService
         return location?.ToString().Split('/').Last() ?? throw new Exception("Failed to get user ID from location header");
     }
 
-    public async Task<bool> IsUserExistsAsync(string baseUrl, string realmName, string username)
+    public async Task<bool> IsUserExistsAsync(string username)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/users?username={username}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users?username={username}";
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
         var users = await response.Content.ReadFromJsonAsync<List<UserRepresentation>>();
         return users != null && users.Any(u => u.Username.Equals(username, StringComparison.OrdinalIgnoreCase));
     }
 
-    public async Task CreateRoleAsync(string baseUrl, string realmName, string roleName)
+    public async Task CreateRoleAsync(string roleName)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/roles";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/roles";
         var data = new RoleRepresentation { Name = roleName };
         var response = await _httpClient.PostAsJsonAsync(url, data);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<bool> IsRoleExistsAsync(string baseUrl, string realmName, string roleName)
+    public async Task<bool> IsRoleExistsAsync(string roleName)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/roles/{roleName}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/roles/{roleName}";
         var response = await _httpClient.GetAsync(url);
         return response.IsSuccessStatusCode;
     }
 
-    public async Task AssignRoleAsync(string baseUrl, string realmName, string userId, string roleName)
+    public async Task AssignRoleAsync(string userId, string roleName)
     {
         AddAuthHeader();
-        var roleUrl = $"{baseUrl}/admin/realms/{realmName}/roles/{roleName}";
+        var roleUrl = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/roles/{roleName}";
         var roleResponse = await _httpClient.GetAsync(roleUrl);
         roleResponse.EnsureSuccessStatusCode();
         var role = await roleResponse.Content.ReadFromJsonAsync<RoleRepresentation>();
 
-        var url = $"{baseUrl}/admin/realms/{realmName}/users/{userId}/role-mappings/realm";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users/{userId}/role-mappings/realm";
         var response = await _httpClient.PostAsJsonAsync(url, new[] { role });
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task AssignRealmManagementRolesToServiceAccountAsync(string baseUrl, string realmName, string clientId)
+    public async Task AssignRealmManagementRolesToServiceAccountAsync()
     {
-        var client = await GetClientByClientIdAsync(baseUrl, realmName, clientId);
+        var client = await GetClientByClientIdAsync();
         var clientInternalId = client.Id;
 
         AddAuthHeader();
-        var saUrl = $"{baseUrl}/admin/realms/{realmName}/clients/{clientInternalId}/service-account-user";
+        var saUrl = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients/{clientInternalId}/service-account-user";
         var saResponse = await _httpClient.GetAsync(saUrl);
         saResponse.EnsureSuccessStatusCode();
         var saUser = await saResponse.Content.ReadFromJsonAsync<UserRepresentation>();
         var saUserId = saUser?.Id ?? throw new Exception("Service account user not found");
 
-        var realmMgmtUrl = $"{baseUrl}/admin/realms/{realmName}/clients?clientId=realm-management";
+        var realmMgmtUrl = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients?clientId=realm-management";
         var realmMgmtResponse = await _httpClient.GetAsync(realmMgmtUrl);
         realmMgmtResponse.EnsureSuccessStatusCode();
         var realmMgmtClients = await realmMgmtResponse.Content.ReadFromJsonAsync<List<ClientRepresentation>>();
         var realmMgmtClient = realmMgmtClients?.FirstOrDefault() ?? throw new Exception("realm-management client not found");
         var realmMgmtInternalId = realmMgmtClient.Id;
 
-        var rolesUrl = $"{baseUrl}/admin/realms/{realmName}/clients/{realmMgmtInternalId}/roles";
+        var rolesUrl = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients/{realmMgmtInternalId}/roles";
         var rolesResponse = await _httpClient.GetAsync(rolesUrl);
         rolesResponse.EnsureSuccessStatusCode();
         var allRoles = await rolesResponse.Content.ReadFromJsonAsync<List<RoleRepresentation>>();
@@ -188,15 +186,15 @@ public class KeycloakService
         var rolesToAssign = new[] { "view-users", "manage-users", "query-users" };
         var roles = allRoles?.Where(r => rolesToAssign.Contains(r.Name)).ToList();
 
-        var assignUrl = $"{baseUrl}/admin/realms/{realmName}/users/{saUserId}/role-mappings/clients/{realmMgmtInternalId}";
+        var assignUrl = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users/{saUserId}/role-mappings/clients/{realmMgmtInternalId}";
         var response = await _httpClient.PostAsJsonAsync(assignUrl, roles);
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task UpdateRealmSettingsAsync(string baseUrl, string realmName, Dictionary<string, object> settings)
+    public async Task UpdateRealmSettingsAsync(Dictionary<string, object> settings)
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}";
         var currentResponse = await _httpClient.GetAsync(url);
         currentResponse.EnsureSuccessStatusCode();
         var currentRealm = await currentResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
@@ -210,18 +208,18 @@ public class KeycloakService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task UpdateRealmAttributeSettingsAsync(string baseUrl, string realmName, Dictionary<string, string> attributes)
+    public async Task UpdateRealmAttributeSettingsAsync(Dictionary<string, string> attributes)
     {
-        await UpdateRealmSettingsAsync(baseUrl, realmName, new Dictionary<string, object> { ["attributes"] = attributes });
+        await UpdateRealmSettingsAsync(new Dictionary<string, object> { ["attributes"] = attributes });
     }
 
-    public async Task UpdateClientSettingsAttributesAsync(string baseUrl, string realmName, string clientId, Dictionary<string, string> attributes)
+    public async Task UpdateClientSettingsAttributesAsync(Dictionary<string, object> attributes)
     {
-        var client = await GetClientByClientIdAsync(baseUrl, realmName, clientId);
+        var client = await GetClientByClientIdAsync();
         var clientInternalId = client.Id;
 
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/clients/{clientInternalId}";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients/{clientInternalId}";
         var currentResponse = await _httpClient.GetAsync(url);
         currentResponse.EnsureSuccessStatusCode();
         var currentClient = await currentResponse.Content.ReadFromJsonAsync<Dictionary<string, object>>();
@@ -232,23 +230,23 @@ public class KeycloakService
         response.EnsureSuccessStatusCode();
     }
 
-    public async Task<string> GetClientSecretAsync(string baseUrl, string realmName, string clientId)
+    public async Task<string> GetClientSecretAsync()
     {
-        var client = await GetClientByClientIdAsync(baseUrl, realmName, clientId);
+        var client = await GetClientByClientIdAsync();
         var clientInternalId = client.Id;
 
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/clients/{clientInternalId}/client-secret";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/clients/{clientInternalId}/client-secret";
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
         var secret = await response.Content.ReadFromJsonAsync<SecretResponse>();
         return secret?.Value ?? throw new Exception("Failed to get client secret");
     }
 
-    public async Task<string> GetSigningKeyAsync(string baseUrl, string realmName)
+    public async Task<string> GetSigningKeyAsync()
     {
         AddAuthHeader();
-        var url = $"{baseUrl}/admin/realms/{realmName}/keys";
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/keys";
         var response = await _httpClient.GetAsync(url);
         response.EnsureSuccessStatusCode();
         var keys = await response.Content.ReadFromJsonAsync<KeysResponse>();
