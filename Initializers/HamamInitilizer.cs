@@ -39,6 +39,7 @@ public class HamamInitializer() : Initializer
         var keyCloakService = new KeyCloakService(config);
         await domainInitializer.Initialize(domains);
         await SetupKeycloak(keyCloakService, config);
+
         var envVarGenerator = new HamamEnvironmentVariableGenerator(localAppSettingsPath, keyCloakService);
         await envVarGenerator.Setup();
     }
@@ -47,7 +48,6 @@ public class HamamInitializer() : Initializer
     {
         Console.WriteLine("Starting Hamam Initializer...");
         Console.WriteLine("Setting up Keycloak...");
-
 
         Console.WriteLine($"Checking/Creating realm '{config.RealmName}'...");
         if (!await keyCloakService.IsRealmExistsAsync())
@@ -123,6 +123,7 @@ public class HamamInitializer() : Initializer
         users = [
             new UserConfig("admin", new List<string> { "admin" }),
             new UserConfig("super", new List<string> { "super-admin" }),
+            new UserConfig("customer", new List<string> { "customer" }),
             new UserConfig("customer1", new List<string> { "customer" }),
             new UserConfig("customer2", new List<string> { "customer" }),
             new UserConfig("ali", new List<string> { "customer" }),
