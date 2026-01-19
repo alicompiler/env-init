@@ -230,6 +230,54 @@ public class KeyCloakService
         response.EnsureSuccessStatusCode();
     }
 
+    public async Task CreateProfileAttribute(string attributeName, bool isRequired)
+    {
+        AddAuthHeader();
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users/profile";
+
+        var currentResponse = await _httpClient.GetAsync(url);
+        currentResponse.EnsureSuccessStatusCode();
+        var profileConfig = await currentResponse.Content.ReadFromJsonAsync<UserProfileConfig>();
+
+        var attributes = profileConfig!.Attributes;
+
+        var newAttribute = new UserProfileAttribute
+        {
+            Name = attributeName,
+            DisplayName = attributeName,
+        };
+        if (isRequired)
+        {
+            newAttribute.Required = new UserProfileAttributeRequired
+            {
+                Roles = ["user"]
+            };
+            newAttribute.Permissions = new UserProfileAttributePermissions
+            {
+                View = ["admin"],
+                Edit = ["admin"]
+            };
+        }
+
+        attributes!.Add(newAttribute);
+        profileConfig.Attributes = attributes;
+
+        var putResponse = await _httpClient.PutAsJsonAsync(url, profileConfig);
+        Console.WriteLine(await putResponse.Content.ReadAsStringAsync());
+        putResponse.EnsureSuccessStatusCode();
+    }
+
+    public async Task<bool> IsProfileAttributeExistsAsync(string attributeName)
+    {
+        AddAuthHeader();
+        var url = $"{_config.BaseUrl}/admin/realms/{_config.RealmName}/users/profile";
+        var response = await _httpClient.GetAsync(url);
+        response.EnsureSuccessStatusCode();
+        var profileConfig = await response.Content.ReadFromJsonAsync<UserProfileConfig>();
+        var attributes = profileConfig?.Attributes;
+        return attributes != null && attributes.Any(a => a.Name == attributeName);
+    }
+
     public async Task<string> GetClientSecretAsync()
     {
         var client = await GetClientByClientIdAsync();

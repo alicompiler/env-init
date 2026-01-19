@@ -4,7 +4,7 @@ namespace EnvInit.KeyCloak;
 
 public class UserConfig
 {
-    public UserConfig(string username, List<string> roles)
+    public UserConfig(string username, List<string> roles, Dictionary<string, List<string>>? attributes = null)
     {
         Username = username;
         FirstName = char.ToUpper(username[0]) + username[1..];
@@ -12,6 +12,10 @@ public class UserConfig
         Password = "pass" + username;
         Email = username + "@hamam.com";
         Roles = roles;
+        if (attributes != null)
+        {
+            Attributes = attributes;
+        }
     }
 
     [JsonPropertyName("username")]

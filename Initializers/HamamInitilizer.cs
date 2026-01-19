@@ -10,14 +10,8 @@ public class HamamInitializer() : Initializer
     {
         Console.WriteLine("Starting Hamam Initializer...");
 
-        Console.WriteLine("Please enter the path to your local appsettings.json file:");
+        Console.WriteLine("Please enter the path to your local appsettings.json file (to skip hit Enter):");
         var localAppSettingsPath = Console.ReadLine();
-
-        if (string.IsNullOrEmpty(localAppSettingsPath))
-        {
-            Console.WriteLine("Invalid file path provided. Exiting initialization.");
-            return;
-        }
 
         Console.WriteLine("Starting domain initialization...");
         var domainInitializer = new DomainInitializer();
@@ -40,8 +34,11 @@ public class HamamInitializer() : Initializer
         await domainInitializer.Initialize(domains);
         await SetupKeycloak(keyCloakService, config);
 
-        var envVarGenerator = new HamamEnvironmentVariableGenerator(localAppSettingsPath, keyCloakService);
-        await envVarGenerator.Setup();
+        if (!string.IsNullOrEmpty(localAppSettingsPath))
+        {
+            var envVarGenerator = new HamamEnvironmentVariableGenerator(localAppSettingsPath, keyCloakService);
+            await envVarGenerator.Setup();
+        }
     }
 
     private async Task SetupKeycloak(KeyCloakService keyCloakService, KeyCloakConfig config)
@@ -118,22 +115,38 @@ public class HamamInitializer() : Initializer
         Console.WriteLine($" - Updating client token lifespans, access: 10 minutes, refresh: 30 minutes");
         await keyCloakService.UpdateClientSettingsAttributesAsync(attributes);
 
+        Console.WriteLine($"Checking/Creating 'deleted' profile attributes...");
+        if (!await keyCloakService.IsProfileAttributeExistsAsync("deleted"))
+        {
+            await keyCloakService.CreateProfileAttribute("deleted", true);
+            Console.WriteLine($"Profile attribute 'deleted' created.");
+        }
+        else
+        {
+            Console.WriteLine($"Profile attribute 'deleted' already exists.");
+        }
+
 
         var users = new List<UserConfig>();
+        var attr = new Dictionary<string, List<string>>
+        {
+            ["deleted"] = ["false"]
+        };
+
         users = [
-            new UserConfig("admin", new List<string> { "admin" }),
-            new UserConfig("super", new List<string> { "super-admin" }),
-            new UserConfig("customer", new List<string> { "customer" }),
-            new UserConfig("customer1", new List<string> { "customer" }),
-            new UserConfig("customer2", new List<string> { "customer" }),
-            new UserConfig("ali", new List<string> { "customer" }),
-            new UserConfig("yousif", new List<string> { "admin" }),
-            new UserConfig("ibrahim", new List<string> { "admin" }),
-            new UserConfig("haya", new List<string> { "admin" }),
-            new UserConfig("tabarak", new List<string> { "admin" }),
-            new UserConfig("mina", new List<string> { "admin" }),
-            new UserConfig("ahmad", new List<string> { "customer" }),
-            new UserConfig("malak", new List<string> { "admin" }),
+            new UserConfig("admin", new List<string> { "admin" }, attr),
+            new UserConfig("super", new List<string> { "super-admin" }, attr),
+            new UserConfig("customer", new List<string> { "customer" }, attr),
+            new UserConfig("customer1", new List<string> { "customer" }, attr),
+            new UserConfig("customer2", new List<string> { "customer" }, attr),
+            new UserConfig("ali", new List<string> { "customer" }, attr),
+            new UserConfig("yousif", new List<string> { "admin" }, attr),
+            new UserConfig("ibrahim", new List<string> { "admin" }, attr),
+            new UserConfig("haya", new List<string> { "admin" }, attr),
+            new UserConfig("tabarak", new List<string> { "admin" }, attr),
+            new UserConfig("mina", new List<string> { "admin" }, attr),
+            new UserConfig("ahmad", new List<string> { "customer" }, attr),
+            new UserConfig("malak", new List<string> { "admin" }, attr),
         ];
         Console.WriteLine($"Creating users in realm '{config.RealmName}'...");
         foreach (var user in users)
