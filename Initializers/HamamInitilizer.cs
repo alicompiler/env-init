@@ -25,7 +25,7 @@ public class HamamInitializer() : Initializer
             RealmName = "hamam",
             ClientId = "api",
             AdminUser = "admin",
-            AdminPass = "admin"
+            AdminPass = "password"
         };
         var keyCloakService = new KeyCloakService(config);
         await domainInitializer.Initialize(domains);
