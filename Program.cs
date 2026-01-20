@@ -12,7 +12,7 @@ class Program
         var choice = Console.ReadLine();
         if (choice == "2")
         {
-            var connectionString = "Host=localhost;Username=admin;Password=admin;Database=dragon_system;Port=9001";
+            var connectionString = "Host=localhost;Username=admin;Password=password;Database=dragon_system;Port=9001";
             var scriptRunner = new ScriptRunner(connectionString);
             try
             {
