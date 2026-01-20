@@ -12,7 +12,7 @@ class Program
         var choice = Console.ReadLine();
         if (choice == "2")
         {
-            var connectionString = "Host=localhost;Username=admin;Password=admin;Database=dragon_system;Port=6400";
+            var connectionString = "Host=localhost;Username=admin;Password=admin;Database=dragon_system;Port=9001";
             var scriptRunner = new ScriptRunner(connectionString);
             try
             {
@@ -28,7 +28,5 @@ class Program
 
         var hamamInitializer = new HamamInitializer();
         await hamamInitializer.Initialize();
-
-
     }
 }

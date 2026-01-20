@@ -17,14 +17,11 @@ public class HamamInitializer() : Initializer
         var domainInitializer = new DomainInitializer();
         var domains = new List<string>
         {
-            "sso.hamam.local",
-            "api.hamam.local",
-            "admin.hamam.local",
-            "db.hamam.local"
         };
+
         var config = new KeyCloakConfig
         {
-            BaseUrl = "http://sso.hamam.local",
+            BaseUrl = "http://localhost:9002",
             RealmName = "hamam",
             ClientId = "api",
             AdminUser = "admin",
