@@ -94,13 +94,13 @@ public class HamamInitializer() : Initializer
 
         Console.WriteLine($"Configuring realm settings '{config.RealmName}'...");
 
-        var accessTokenLifespan = 60 * 10;
-        var refreshTokenLifespan = 60 * 30;
+        var accessTokenLifespan = 60 * 60;
+        var refreshTokenLifespan = 60 * 60 * 24 * 3;
 
-        Console.WriteLine($" - Setting access token lifespan to 10 minutes");
+        Console.WriteLine($" - Setting access token lifespan to 1 hour");
         await keyCloakService.UpdateRealmSettingsAsync(new Dictionary<string, object> { ["accessTokenLifespan"] = accessTokenLifespan });
 
-        Console.WriteLine($" - Setting refresh token lifespan to 30 minutes");
+        Console.WriteLine($" - Setting refresh token lifespan to 3 days");
         await keyCloakService.UpdateRealmSettingsAsync(new Dictionary<string, object>
         {
             ["ssoSessionIdleTimeout"] = refreshTokenLifespan,
